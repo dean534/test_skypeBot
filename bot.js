@@ -109,6 +109,10 @@ class Bot {
                 // Send the activity to the user.
                 await turnContext.sendActivity(reply);
                 break;
+            case 'help':
+                // Send greeting when users are added to the conversation.
+                await this.sendRoot(turnContext);
+                break;
             default:
                 const qnaResults = await this.qnaMaker.getAnswers(turnContext);
                 // If an answer was received from QnA Maker, send the answer back to the user.
@@ -119,23 +123,14 @@ class Bot {
                     await turnContext.sendActivity(`您好,目前暫時無法幫您解答,我們將在明日為您服務`);
                 }
             }
-        } else if (turnContext.activity.type === ActivityTypes.ConversationUpdate||turnContext.activity.type === ActivityTypes.ContactRelationUpdate) {
-            // Send greeting when users are added to the conversation.
-            await this.sendWelcomeMessage(turnContext);
         } else {
             // Generic handler for all other activity types.
-            console.log(turnContext)
             await turnContext.sendActivity(`[${ turnContext.activity.type } event detected]`);
         }
         // Save state changes
         await this.conversationState.saveChanges(turnContext);
     }
-    async sendWelcomeMessage(turnContext) {
-        // Do we have any new members added to the conversation?
-        if (turnContext.activity.membersAdded.length !== 0) {
-            // Iterate over all new members added to the conversation
-            for (let idx in turnContext.activity.membersAdded) {
-                if (turnContext.activity.membersAdded[idx].id !== turnContext.activity.recipient.id) {
+    async sendRoot(turnContext) {
                     // 在這裡加入歡迎的字句
                     const buttons = [
                         { type: ActionTypes.ImBack, title: '維護時間', value: '維護時間' },
@@ -153,9 +148,6 @@ class Bot {
                     // Send hero card to the user.
                     await turnContext.sendActivity(reply);
                     await turnContext.sendActivity('或是輸入你的問題');
-                }
-            }
-        }
     }
 }
 
