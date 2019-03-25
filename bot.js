@@ -14,12 +14,11 @@ class Bot {
      *
      * @param {ConversationState} conversation state object
      */
-    constructor(conversationState, endpoint, qnaOptions) {
+    constructor(conversationState) {
         // Creates a new state accessor property.
         // See https://aka.ms/about-bot-state-accessors to learn more about the bot state and state accessors
         this.stateProperty = conversationState.createProperty(TURN_STATE_PROPERTY);
         this.conversationState = conversationState;
-        // this.qnaMaker = new QnAMaker(endpoint, qnaOptions);
     }
 
     getInternetAttachment(name, fileType, contentUrl) {
