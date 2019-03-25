@@ -119,11 +119,12 @@ class Bot {
                     await turnContext.sendActivity(`您好,目前暫時無法幫您解答,我們將在明日為您服務`);
                 }
             }
-        } else if (turnContext.activity.type === ActivityTypes.ConversationUpdate) {
+        } else if (turnContext.activity.type === ActivityTypes.ConversationUpdate||turnContext.activity.type === ActivityTypes.ContactRelationUpdate) {
             // Send greeting when users are added to the conversation.
             await this.sendWelcomeMessage(turnContext);
         } else {
             // Generic handler for all other activity types.
+            console.log(turnContext)
             await turnContext.sendActivity(`[${ turnContext.activity.type } event detected]`);
         }
         // Save state changes
