@@ -1,0 +1,63 @@
+{
+    "name": "test_skypebot",
+    "description": "",
+    "services": [
+        {
+            "type": "abs",
+            "tenantId": "b5d3cfba-a2ee-4eec-be80-f81d0d7d0f30",
+            "subscriptionId": "3286d1da-0e7f-45fe-ab6a-19a10950eca7",
+            "resourceGroup": "east-asia",
+            "serviceName": "test_skypebot",
+            "name": "test_skypebot",
+            "id": "1",
+            "appId": "4b008c43-e186-4ac3-afe9-d45e32b115a8"
+        },
+        {
+            "type": "blob",
+            "connectionString": "DefaultEndpointsProtocol=https;AccountName=testskypebotbf85;AccountKey=vtB/dbrGzs2G6Y5+mKt8a0x8luM30vh/gEwiz2JhgjiAhZ07vX8oktI8VffZsTxWftRVmtte4uTPKFDNlCkGMQ==;",
+            "tenantId": "b5d3cfba-a2ee-4eec-be80-f81d0d7d0f30",
+            "subscriptionId": "3286d1da-0e7f-45fe-ab6a-19a10950eca7",
+            "resourceGroup": "east-asia",
+            "serviceName": "testskypebotbf85",
+            "id": "2"
+        },
+        {
+            "type": "endpoint",
+            "appId": "",
+            "appPassword": "",
+            "endpoint": "http://localhost:3978/api/messages",
+            "name": "development",
+            "id": "3"
+        },
+        {
+            "type": "endpoint",
+            "appId": "4b008c43-e186-4ac3-afe9-d45e32b115a8",
+            "appPassword": "g-MNX!X[iTM_IxXZ{j]rY^wE2p",
+            "endpoint": "https://testskypebot.azurewebsites.net/api/messages",
+            "name": "production",
+            "id": "4"
+        },
+        {
+            "type": "appInsights",
+            "instrumentationKey": "36d1e72b-6b58-4847-8081-3bf59ea4077b",
+            "applicationId": "509d00ec-49c4-49ce-bce3-9df3c41f62d5",
+            "apiKeys": {},
+            "tenantId": "b5d3cfba-a2ee-4eec-be80-f81d0d7d0f30",
+            "subscriptionId": "3286d1da-0e7f-45fe-ab6a-19a10950eca7",
+            "resourceGroup": "east-asia",
+            "serviceName": "test_skypebot4hyvuc",
+            "id": "5"
+        },
+        {
+            "type": "qna",
+            "name": "testSkypebotAna",
+            "kbId": "f8b0501e-8c54-4613-807f-630c4fa8cd81",
+            "subscriptionKey": "443cb52efb4c44629ed9584fbbdb78a6",
+            "endpointKey": "d7677b3f-7224-48f7-a75c-9313b1d1b995",
+            "hostname": "https://testskybotqna.azurewebsites.net/qnamaker",
+            "id": "157"
+        }
+    ],
+    "padlock": "",
+    "version": "2.0"
+}
