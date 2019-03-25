@@ -18,7 +18,7 @@ const ENV_FILE = path.join(__dirname, '.env');
 const env = require('dotenv').config({ path: ENV_FILE });
 
 // 這裡是 qna 的位置
-// const QNA_CONFIGURATION = 'testSkypebotAna';
+const QNA_CONFIGURATION = 'testSkypebotAna';
 
 // Get the .bot file path
 // See https://aka.ms/about-bot-file to learn more about .bot file its use and bot configuration.
@@ -44,13 +44,13 @@ const BOT_CONFIGURATION = (process.env.NODE_ENV || DEV_ENVIRONMENT);
 // Get bot endpoint configuration by service name
 // Bot configuration as defined in .bot file
 const endpointConfig = botConfig.findServiceByNameOrId(BOT_CONFIGURATION);
-// const qnaConfig = botConfig.findServiceByNameOrId(QNA_CONFIGURATION);
+const qnaConfig = botConfig.findServiceByNameOrId(QNA_CONFIGURATION);
 
-// const qnaEndpointSettings = {
-//     knowledgeBaseId: qnaConfig.kbId,
-//     endpointKey: qnaConfig.endpointKey,
-//     host: qnaConfig.hostname
-// };
+const qnaEndpointSettings = {
+    knowledgeBaseId: qnaConfig.kbId,
+    endpointKey: qnaConfig.endpointKey,
+    host: qnaConfig.hostname
+};
 
 const appId = endpointConfig.appId === undefined ? process.env.microsoftAppID : endpointConfig.appId;
 const appPassword = endpointConfig.appPassword === undefined ? process.env.microsoftAppPassword : endpointConfig.appPassword;
@@ -102,13 +102,13 @@ conversationState = new ConversationState(memoryStorage);
 // conversationState = new ConversationState(blobStorage);
 
 // 創建 QnA bot
-let bot = new Bot(conversationState);
-// try {
-//     bot = new Bot(conversationState, qnaEndpointSettings, {});
-// } catch (err) {
-//     console.error(`[botInitializationError]: ${ err }`);
-//     process.exit();
-// }
+let bot;
+try {
+    bot = new Bot(conversationState, qnaEndpointSettings, {});
+} catch (err) {
+    console.error(`[botInitializationError]: ${ err }`);
+    process.exit();
+}
 
 // Create HTTP server
 let server = restify.createServer();

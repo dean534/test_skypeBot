@@ -4,7 +4,7 @@
 // bot.js is your bot's main entry point to handle incoming activities.
 
 const { ActivityTypes, ActionTypes, CardFactory, TurnContext } = require('botbuilder');
-// const { QnAMaker } = require('botbuilder-ai');
+const { QnAMaker } = require('botbuilder-ai');
 
 // Turn counter property
 const TURN_STATE_PROPERTY = 'turnStateProperty';
@@ -14,11 +14,12 @@ class Bot {
      *
      * @param {ConversationState} conversation state object
      */
-    constructor(conversationState) {
+    constructor(conversationState, endpoint, qnaOptions) {
         // Creates a new state accessor property.
         // See https://aka.ms/about-bot-state-accessors to learn more about the bot state and state accessors
         this.stateProperty = conversationState.createProperty(TURN_STATE_PROPERTY);
         this.conversationState = conversationState;
+        this.qnaMaker = new QnAMaker(endpoint, qnaOptions);
     }
 
     getInternetAttachment(name, fileType, contentUrl) {
@@ -109,15 +110,14 @@ class Bot {
                 await turnContext.sendActivity(reply);
                 break;
             default:
-                // const qnaResults = await this.qnaMaker.generateAnswer(turnContext);
-                // // If an answer was received from QnA Maker, send the answer back to the user.
-                // if (qnaResults[0]) {
-                //     await turnContext.sendActivity(qnaResults[0].answer);
-                // // If no answers were returned from QnA Maker, reply with help.
-                // } else {
-                //     await turnContext.sendActivity(`您好,目前暫時無法幫您解答,我們將在明日為您服務`);
-                // }
-                await turnContext.sendActivity(`您好,我們將在明日為您服務`);
+                const qnaResults = await this.qnaMaker.getAnswers(turnContext);
+                // If an answer was received from QnA Maker, send the answer back to the user.
+                if (qnaResults[0]) {
+                    await turnContext.sendActivity(qnaResults[0].answer);
+                // If no answers were returned from QnA Maker, reply with help.
+                } else {
+                    await turnContext.sendActivity(`您好,目前暫時無法幫您解答,我們將在明日為您服務`);
+                }
             }
         } else if (turnContext.activity.type === ActivityTypes.ConversationUpdate) {
             // Send greeting when users are added to the conversation.
