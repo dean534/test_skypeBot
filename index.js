@@ -1,27 +1,18 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
-
-// Import required packages
 const path = require('path');
 const restify = require('restify');
-
-// Import required bot services. See https://aka.ms/bot-services to learn more about the different parts of a bot.
 const { BotFrameworkAdapter, ConversationState, MemoryStorage } = require('botbuilder');
-// Import required bot configuration.
 const { BotConfiguration } = require('botframework-config');
 
 const { Bot } = require('./bot');
 
-// Read botFilePath and botFileSecret from .env file
-// Note: Ensure you have a .env file and include botFilePath and botFileSecret.
+// 讀取.env內部的密碼
 const ENV_FILE = path.join(__dirname, '.env');
 const env = require('dotenv').config({ path: ENV_FILE });
 
 // 這裡是 qna 的位置
 const QNA_CONFIGURATION = 'testSkypebotAna';
 
-// Get the .bot file path
-// See https://aka.ms/about-bot-file to learn more about .bot file its use and bot configuration.
+// bot的位置
 const BOT_FILE = path.join(__dirname, (process.env.botFilePath || ''));
 let botConfig;
 try {
@@ -64,15 +55,11 @@ const adapter = new BotFrameworkAdapter({
     openIdMetadata: process.env.BotOpenIdMetadata
 });
 
-// Catch-all for any unhandled errors in your bot.
+// error控制 所有error都會回傳這個訊息
 adapter.onTurnError = async (context, error) => {
-    // This check writes out errors to console log .vs. app insights.
     console.error(`\n [onTurnError]: ${ error }`);
-    // Send a message to the user
     await context.sendActivity(`Oops. Something went wrong!`);
-    // Clear out state
     await conversationState.clear(context);
-    // Save state changes.
     await conversationState.saveChanges(context);
 };
 
@@ -110,18 +97,14 @@ try {
     process.exit();
 }
 
-// Create HTTP server
+// HTTP server
 let server = restify.createServer();
 server.listen(process.env.port || process.env.PORT || 3978, function() {
     console.log(`\n${ server.name } listening to ${ server.url }`);
-    console.log(`\nGet Bot Framework Emulator: https://aka.ms/botframework-emulator`);
-    console.log(`\nTo talk to your bot, open echoBot-with-counter.bot file in the Emulator`);
 });
 
-// Listen for incoming activities and route them to your bot main dialog.
 server.post('/api/messages', (req, res) => {
     adapter.processActivity(req, res, async (context) => {
-        // route to main dialog.
         await bot.onTurn(context);
     });
 });
