@@ -1,6 +1,6 @@
 const path = require('path');
 const restify = require('restify');
-const { BotFrameworkAdapter, ConversationState, MemoryStorage } = require('botbuilder');
+const { BotFrameworkAdapter, ConversationState, MemoryStorage, BotState } = require('botbuilder');
 const { BotConfiguration } = require('botframework-config');
 
 const { Bot } = require('./bot');
@@ -59,19 +59,19 @@ const adapter = new BotFrameworkAdapter({
 adapter.onTurnError = async (context, error) => {
     console.error(`\n [onTurnError]: ${ error }`);
     await context.sendActivity(`Oops. Something went wrong!`);
-    await conversationState.clear(context);
-    await conversationState.saveChanges(context);
+    await botState.clear(context);
+    await botState.saveChanges(context);
 };
 
 // Define a state store for your bot. See https://aka.ms/about-bot-state to learn more about using MemoryStorage.
 // A bot requires a state store to persist the dialog and user state between messages.
-let conversationState;
 
 // For local development, in-memory storage is used.
 // CAUTION: The Memory Storage used here is for local bot debugging only. When the bot
 // is restarted, anything stored in memory will be gone.
 const memoryStorage = new MemoryStorage();
-conversationState = new ConversationState(memoryStorage);
+const botState = new BotState(memoryStorage, () => 'proactiveBot.botState');
+
 
 // CAUTION: You must ensure your product environment has the NODE_ENV set
 //          to use the Azure Blob storage or Azure Cosmos DB providers.
@@ -91,7 +91,7 @@ conversationState = new ConversationState(memoryStorage);
 // 創建 QnA bot
 let bot;
 try {
-    bot = new Bot(conversationState, adapter, qnaEndpointSettings, {});
+    bot = new Bot(botState, adapter, qnaEndpointSettings, {});
 } catch (err) {
     console.error(`[botInitializationError]: ${ err }`);
     process.exit();
