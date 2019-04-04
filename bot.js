@@ -178,7 +178,7 @@ class Bot {
             });
 
             await turnContext.sendActivity(`bulletin has been send`)
-        }catch{
+        } catch(err) {
             await turnContext.sendActivity(`err happened.`)
         }
 
