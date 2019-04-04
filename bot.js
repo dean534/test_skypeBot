@@ -168,8 +168,8 @@ class Bot {
     async broadcastBulletin(turnContext){
         const channels = await this.channelList.get(turnContext, {});
         let bulletin = await getlastbulletin(storageUrl);
-        for (let channel of channels){
-            let reference = channel.reference;
+        for (let channel in channels){
+            let reference = channels[channel].reference;
             await this.adapter.continueConversation(reference, async (proactiveTurnContext) => {
                 await proactiveTurnContext.sendActivity(`
                 ${ bulletin.data.title } 
@@ -177,7 +177,7 @@ class Bot {
             `);
             });
         }
-        await proactiveTurnContext.sendActivity(`bulletin has been send`)
+        await turnContext.sendActivity(`bulletin has been send`)
     }
 }
 
