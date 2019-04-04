@@ -44,7 +44,7 @@ class Bot {
                     await this.setChannel(turnContext, message);
                     break;
                 case 'broadcastbulletin':
-                    await this.broadcastBulletin(turnContext);
+                    await this.broadcastBulletin(turnContext, message);
                     break;
                 case '維護時間':
                     let bulletin = await getlastbulletin(storageUrl);
@@ -165,20 +165,24 @@ class Bot {
         }
     }
 
-    async broadcastBulletin(turnContext){
+    async broadcastBulletin(turnContext, message){
         const channels = await this.channelList.get(turnContext, {});
         let bulletin = await getlastbulletin(storageUrl);
-        for (let channel in channels){
-            console.log(channel);
-            let reference = channels[channel].reference;
+        try{
+            let reference = channels[message[2]].reference;
             await this.adapter.continueConversation(reference, async (proactiveTurnContext) => {
                 await proactiveTurnContext.sendActivity(`
                 ${ bulletin.data.title } 
                 ${ bulletin.data.detail }
             `);
             });
+
+            await turnContext.sendActivity(`bulletin has been send`)
+        }catch{
+            await turnContext.sendActivity(`err happened.`)
         }
-        await turnContext.sendActivity(`bulletin has been send`)
+
+
     }
 }
 
