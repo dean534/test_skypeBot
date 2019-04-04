@@ -39,7 +39,7 @@ class Bot {
             let message = (turnContext.activity.text).trim().toLowerCase().split(' ')
             console.log(message)
             let reply;
-            switch (message[0]) {
+            switch (message[1]) {
                 case 'setchannel':
                     await this.setChannel(turnContext, message);
                     break;
@@ -153,8 +153,8 @@ class Bot {
     async setChannel(turnContext, message){
         const reference = TurnContext.getConversationReference(turnContext.activity);
         const channels = await this.channelList.get(turnContext, {});
-        const channelInfo = channels[message[1]]
-        channels[message[1]]={ name: message[1], reference }
+        const channelInfo = channels[message[2]]
+        channels[message[2]]={ name: message[2], reference }
         try {
             // Save to storage
             await this.channelList.set(turnContext, channels);
