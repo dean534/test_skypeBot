@@ -91,7 +91,7 @@ conversationState = new ConversationState(memoryStorage);
 // 創建 QnA bot
 let bot;
 try {
-    bot = new Bot(conversationState, qnaEndpointSettings, {});
+    bot = new Bot(conversationState, adapter, qnaEndpointSettings, {});
 } catch (err) {
     console.error(`[botInitializationError]: ${ err }`);
     process.exit();

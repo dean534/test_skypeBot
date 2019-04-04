@@ -1,21 +1,28 @@
 const {
     ActivityTypes,
     ActionTypes,
-    CardFactory
+    CardFactory,
+    TurnContext
 } = require('botbuilder');
 const {
     QnAMaker
 } = require('botbuilder-ai');
-const axios = require('axios');
+
+const { getlastbulletin } = require('./helper/bulletin');
+
 // 儲存資料的伺服器 本地請使用"http://localhost:3000"
 const storageUrl = 'https://ancient-journey-32544.herokuapp.com';
 const TURN_STATE_PROPERTY = 'turnStateProperty';
+const CHANNEL_LIST = 'channelList';
+
 class Bot {
-    constructor(conversationState, endpoint, qnaOptions) {
+    constructor(conversationState, adapter, endpoint, qnaOptions) {
         // 這裡是儲存state的地方，目前暫時沒有用到
         this.stateProperty = conversationState.createProperty(TURN_STATE_PROPERTY);
+        this.channelList = conversationState.createProperty(CHANNEL_LIST);
         this.conversationState = conversationState;
         this.qnaMaker = new QnAMaker(endpoint, qnaOptions);
+        this.adapter = adapter;
     }
 
     // 用於提取檔案
@@ -29,18 +36,22 @@ class Bot {
 
     async onTurn(turnContext) {
         if (turnContext.activity.type === ActivityTypes.Message) {
+            let message = (turnContext.activity.text).trim().toLowerCase().split(' ')
+            console.log(message)
             let reply;
-            switch (turnContext.activity.text) {
+            switch (message[0]) {
+                case 'setchannel':
+                    await this.setChannel(turnContext, message);
+                    break;
+                case 'broadcastbulletin':
+                    await this.broadcastBulletin(turnContext);
+                    break;
                 case '維護時間':
-                    let bulletin = await axios.get(`${ storageUrl }/api/bulletin`,{
-                        params: {
-                          lastest: true
-                        }
-                      });
+                    let bulletin = await getlastbulletin(storageUrl);
                     await turnContext.sendActivity(`
-                ${ bulletin.data.title } 
-                ${ bulletin.data.detail }
-                `);
+                        ${ bulletin.data.title } 
+                        ${ bulletin.data.detail }
+                    `);
                     break;
                 case '登入流程':
                     const buttons = [{
@@ -137,6 +148,36 @@ class Bot {
         reply.attachments = [card];
         await turnContext.sendActivity(reply);
         await turnContext.sendActivity('或是輸入你的問題');
+    }
+
+    async setChannel(turnContext, message){
+        const reference = TurnContext.getConversationReference(turnContext.activity);
+        const channels = await this.channelList.get(turnContext, {});
+        const channelInfo = channels[message[1]]
+        channels[message[1]]={ name: message[1], reference }
+        try {
+            // Save to storage
+            await this.channelList.set(turnContext, channels);
+            // Notify the user that the job has been processed
+            await turnContext.sendActivity('Successful write to log.');
+        } catch (err) {
+            await turnContext.sendActivity(`Write failed: ${ err.message }`);
+        }
+    }
+
+    async broadcastBulletin(turnContext){
+        const channels = await this.channelList.get(turnContext, {});
+        let bulletin = await getlastbulletin(storageUrl);
+        for (let channel of channels){
+            let reference = channel.reference;
+            await this.adapter.continueConversation(reference, async (proactiveTurnContext) => {
+                await proactiveTurnContext.sendActivity(`
+                ${ bulletin.data.title } 
+                ${ bulletin.data.detail }
+            `);
+            });
+        }
+        await proactiveTurnContext.sendActivity(`bulletin has been send`)
     }
 }
 
