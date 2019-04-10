@@ -42,13 +42,16 @@ class Bot {
             let reply;
             switch (message[1]) {
                 case 'checkchannel':
-                await this.checkchannel(turnContext)
+                    await this.checkChannel(turnContext)
                     break;
                 case 'setchannel':
                     await this.setChannel(turnContext, message);
                     break;
-                case 'broadcastbulletin':
-                    await this.broadcastBulletin(turnContext);
+                case'checkchannelstate':
+                    await this.checkState(turnContext)
+                    break;
+                case 'announce':
+                    await this.announce(turnContext, message);
                     break;
                 case '維護時間':
                     let bulletin = await getlastbulletin(storageUrl);
@@ -157,43 +160,56 @@ class Bot {
     async setChannel(turnContext, message){
         const reference = TurnContext.getConversationReference(turnContext.activity);
         const channels = await this.channelList.get(turnContext, {});
-        const channelInfo = channels[message[2]]
         channels[message[2]]={ name: message[2], reference }
         try {
-            // Save to storage
             await this.channelList.set(turnContext, channels);
-            // Notify the user that the job has been processed
             await turnContext.sendActivity('Successful write to log.');
         } catch (err) {
             await turnContext.sendActivity(`Write failed: ${ err.message }`);
         }
     }
-    async checkchannel(turnContext){
+    async checkChannelState(turnContext){
         const channels = await this.channelList.get(turnContext, {});
-        let channelList="";
-        for (let channel in channels){
-            channelList +=`${channel}\n`
+        await turnContext.sendActivity(`${ JSON.stringify(channels) }`);
+    }
+    async checkChannel(turnContext){
+        const channels = await this.channelList.get(turnContext, {});
+        if (Object.keys(channels).length) {
+            await turnContext.sendActivity(
+                '| Channel Name &nbsp; | Conversation ID &nbsp; |<br>' +
+                '| :--- | :---: |<br>' +
+                Object.keys(channels).map((key) => {
+                    return `${ key } &nbsp; | ${ channels[key].reference.conversation.id.split('|')[0] }`;
+                }).join('<br>'));
+        } else {
+            await turnContext.sendActivity('The channels log is empty.');
         }
-        await turnContext.sendActivity(channelList);
     }
 
-    async broadcastBulletin(turnContext){
-        const channels = await this.channelList.get(turnContext, {});
-        let bulletin = await getlastbulletin(storageUrl);
-        try{
-            for(let channel in channels){
-                let reference = channels[channel].reference;
-                await this.adapter.continueConversation(reference, async (proactiveTurnContext) => {
-                    await proactiveTurnContext.sendActivity(`
-                    ${ bulletin.data.title } 
-                    ${ bulletin.data.detail }
-                    `);
-                });
-            }
-
-            await turnContext.sendActivity(`bulletin has been send`)
-        } catch (err) {
-            await turnContext.sendActivity(`err happened.`)
+    async announce(turnContext, message){
+        switch(message[2]){
+            case 'maintance':
+            case '-m':
+                const channels = await this.channelList.get(turnContext, {});
+                let bulletin = await getlastbulletin(storageUrl);
+                try{
+                    for(let channel in channels){
+                        let reference = channels[channel].reference;
+                        await this.adapter.continueConversation(reference, async (proactiveTurnContext) => {
+                            await proactiveTurnContext.sendActivity(`
+                            ${ bulletin.data.title } 
+                            ${ bulletin.data.detail }
+                            `);
+                        });
+                    }
+                    
+                    await turnContext.sendActivity(`bulletin has been send`)
+                } catch (err) {
+                    await turnContext.sendActivity(`err happened.`)
+                }
+                break;
+            default:
+                await turnContext.sendActivity(`請輸入欲廣播的項目`)
         }
     }
 }
