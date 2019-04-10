@@ -65,13 +65,13 @@ class Bot {
                         },
                         {
                             type: ActionTypes.ImBack,
-                            title: 'Token 登入',
-                            value: 'Token 登入'
+                            title: 'Token登入',
+                            value: 'Token登入'
                         },
                         {
                             type: ActionTypes.ImBack,
-                            title: 'appLink 登入',
-                            value: 'appLink 登入'
+                            title: 'appLink登入',
+                            value: 'appLink登入'
                         }
                     ];
                     const card = CardFactory.heroCard('', undefined, buttons, {

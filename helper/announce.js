@@ -6,7 +6,7 @@ const {
 let database = {};
 
 database.Announce = axios.create({
-  baseURL: `http://localhost:3001/api/announce`
+  baseURL: `https://ancient-journey-32544.herokuapp.com/api/announce`
 });
 
 module.exports = database;
