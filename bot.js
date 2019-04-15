@@ -4,11 +4,13 @@ const {
     CardFactory,
     TurnContext
 } = require('botbuilder');
-const {
-    QnAMaker
-} = require('botbuilder-ai');
+// const {
+//     QnAMaker
+// } = require('botbuilder-ai');
 
-const { Announce } = require('./helper/announce');
+const {
+    Announce
+} = require('./helper/announce');
 
 const TURN_STATE_PROPERTY = 'turnStateProperty';
 const CHANNEL_LIST = 'channelList';
@@ -19,7 +21,7 @@ class Bot {
         this.stateProperty = botState.createProperty(TURN_STATE_PROPERTY);
         this.channelList = botState.createProperty(CHANNEL_LIST);
         this.botState = botState;
-        this.qnaMaker = new QnAMaker(endpoint, qnaOptions);
+        // this.qnaMaker = new QnAMaker(endpoint, qnaOptions);
         this.adapter = adapter;
     }
 
@@ -44,7 +46,7 @@ class Bot {
                 case 'setchannel':
                     await this.setChannel(turnContext, message);
                     break;
-                case'checkchannelstate':
+                case 'checkchannelstate':
                     await this.checkState(turnContext)
                     break;
                 case 'announce':
@@ -108,17 +110,19 @@ class Bot {
                     await turnContext.sendActivity(reply);
                     break;
                 case 'help':
-                // 叫出工具列
+                    // 叫出工具列
                     await this.callhelp(turnContext);
                     break;
                 default:
-                    const qnaResults = await this.qnaMaker.getAnswers(turnContext);
-                    // 如果qna有回傳答案，就回傳
-                    if (qnaResults[0]) {
-                        await turnContext.sendActivity(qnaResults[0].answer);
-                    } else {
-                        await turnContext.sendActivity(`您好,目前暫時無法幫您解答,我們將在明日為您服務`);
-                    }
+                    // qna到期，取消服務
+                    // const qnaResults = await this.qnaMaker.getAnswers(turnContext);
+                    // // 如果qna有回傳答案，就回傳
+                    // if (qnaResults[0]) {
+                    //     await turnContext.sendActivity(qnaResults[0].answer);
+                    // } else {
+                    //     await turnContext.sendActivity(`您好,目前暫時無法幫您解答,我們將在明日為您服務`);
+                    // }
+                    await turnContext.sendActivity(`您好,目前暫時無法幫您解答,我們將在明日為您服務`);
             }
         } else {
             // 若不是傳訊事件，就回傳
@@ -154,10 +158,18 @@ class Bot {
         await turnContext.sendActivity('或是輸入你的問題');
     }
 
-    async setChannel(turnContext, message){
+    async setChannel(turnContext, message) {
         const reference = TurnContext.getConversationReference(turnContext.activity);
         const channels = await this.channelList.get(turnContext, {});
-        channels[message[2]]={ name: message[2], reference }
+        channels[message[2]] = {
+            name: message[2],
+            reference: {
+                bot: reference.serviceUrl,
+                channelId: reference.serviceUrl,
+                coversation: reference.serviceUrl,
+                serviceUrl: reference.serviceUrl
+            }
+        }
         try {
             await this.channelList.set(turnContext, channels);
             await turnContext.sendActivity('Successful write to log.');
@@ -165,11 +177,11 @@ class Bot {
             await turnContext.sendActivity(`Write failed: ${ err.message }`);
         }
     }
-    async checkChannelState(turnContext){
+    async checkState(turnContext) {
         const channels = await this.channelList.get(turnContext, {});
         await turnContext.sendActivity(`${ JSON.stringify(channels) }`);
     }
-    async checkChannel(turnContext){
+    async checkChannel(turnContext) {
         const channels = await this.channelList.get(turnContext, {});
         if (Object.keys(channels).length) {
             await turnContext.sendActivity(
@@ -183,12 +195,12 @@ class Bot {
         }
     }
 
-    async announce(turnContext, message){
-        if(message[2]){
+    async announce(turnContext, message) {
+        if (message[2]) {
             const channels = await this.channelList.get(turnContext, {});
             let announce = await Announce.get(`/${message[2]}`);
-            try{
-                for(let channel in channels){
+            try {
+                for (let channel in channels) {
                     let reference = channels[channel].reference;
                     await this.adapter.continueConversation(reference, async (proactiveTurnContext) => {
                         await proactiveTurnContext.sendActivity(`
@@ -201,7 +213,7 @@ class Bot {
             } catch (err) {
                 await turnContext.sendActivity(`err happened.`)
             }
-        }else{
+        } else {
             await turnContext.sendActivity(`請輸入欲廣播的項目id`)
         }
     }
