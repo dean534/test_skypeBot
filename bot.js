@@ -53,10 +53,10 @@ class Bot {
                     await this.announce(turnContext, message);
                     break;
                 case '維護時間':
-                    let maintance = await Announce.get(`/next`);
+                    let res = await Announce.get(`/next`);
                     await turnContext.sendActivity(`
-                        ${ maintance.data.title } 
-                        ${ maintance.data.detail }
+                        ${ res.data.title } 
+                        ${ res.data.detail }
                     `);
                     break;
                 case '登入流程':
@@ -164,9 +164,9 @@ class Bot {
         channels[message[2]] = {
             name: message[2],
             reference: {
-                bot: reference.serviceUrl,
-                channelId: reference.serviceUrl,
-                coversation: reference.serviceUrl,
+                bot: reference.bot,
+                channelId: reference.channelId,
+                conversation: reference.conversation,
                 serviceUrl: reference.serviceUrl
             }
         }
@@ -198,21 +198,26 @@ class Bot {
     async announce(turnContext, message) {
         if (message[2]) {
             const channels = await this.channelList.get(turnContext, {});
-            let announce = await Announce.get(`/${message[2]}`);
-            try {
-                for (let channel in channels) {
-                    let reference = channels[channel].reference;
-                    await this.adapter.continueConversation(reference, async (proactiveTurnContext) => {
-                        await proactiveTurnContext.sendActivity(`
-                        ${ announce.data.title } 
-                        ${ announce.data.detail }
-                        `);
-                    });
+            let res = await Announce.get(`/${message[2]}`);
+            if (res.status==200){
+                try {
+                    for (let channel in channels) {
+                        let reference = channels[channel].reference;
+                        await this.adapter.continueConversation(reference, async (proactiveTurnContext) => {
+                            await proactiveTurnContext.sendActivity(`
+                            ${ res.data.title } 
+                            ${ res.data.detail }
+                            `);
+                        });
+                    }
+                    await turnContext.sendActivity(`Announce has been send`)
+                } catch (err) {
+                    await turnContext.sendActivity(`err happened.`)
                 }
-                await turnContext.sendActivity(`Announce has been send`)
-            } catch (err) {
-                await turnContext.sendActivity(`err happened.`)
+            } else {
+                await turnContext.sendActivity(`請確認輸入的是有效的 announce id。`)
             }
+
         } else {
             await turnContext.sendActivity(`請輸入欲廣播的項目id`)
         }
