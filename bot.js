@@ -2,8 +2,11 @@ const {
     ActivityTypes,
     ActionTypes,
     CardFactory,
+    MessageFactory,
     TurnContext
 } = require('botbuilder');
+
+const { ConversationReference } = require('./helper/Schema')
 // const {
 //     QnAMaker
 // } = require('botbuilder-ai');
@@ -12,13 +15,11 @@ const {
     Announce
 } = require('./helper/announce');
 
-const TURN_STATE_PROPERTY = 'turnStateProperty';
 const CHANNEL_LIST = 'channelList';
 
 class Bot {
     constructor(botState, adapter, endpoint, qnaOptions) {
         // 這裡是儲存state的地方，目前暫時沒有用到
-        this.stateProperty = botState.createProperty(TURN_STATE_PROPERTY);
         this.channelList = botState.createProperty(CHANNEL_LIST);
         this.botState = botState;
         // this.qnaMaker = new QnAMaker(endpoint, qnaOptions);
@@ -46,37 +47,23 @@ class Bot {
                 case 'setchannel':
                     await this.setChannel(turnContext, message);
                     break;
-                case 'checkchannelstate':
-                    await this.checkState(turnContext)
-                    break;
                 case 'announce':
                     await this.announce(turnContext, message);
                     break;
                 case '維護時間':
                     let res = await Announce.get(`/next`);
-                    await turnContext.sendActivity(`
-                        ${ res.data.title } 
-                        ${ res.data.detail }
-                    `);
+                    reply = `${res.data.title} 
+                    ${ res.data.detail}`
+                    await turnContext.sendActivity(reply);
                     break;
                 case '登入流程':
-                    const buttons = [{
-                            type: ActionTypes.ImBack,
-                            title: '普通登入',
-                            value: '普通登入'
-                        },
-                        {
-                            type: ActionTypes.ImBack,
-                            title: 'Token登入',
-                            value: 'Token登入'
-                        },
-                        {
-                            type: ActionTypes.ImBack,
-                            title: 'appLink登入',
-                            value: 'appLink登入'
-                        }
-                    ];
-                    const card = CardFactory.heroCard('', undefined, buttons, {
+                    const loginTypes = ['普通登入', 'Token登入', 'appLink登入']
+                    const btns = loginTypes.map(loginType => ({
+                        type: ActionTypes.ImBack,
+                        title: loginType,
+                        value: loginType
+                    }))
+                    const card = CardFactory.heroCard('', undefined, btns, {
                         text: '請問您要詢問那一種登入方式？'
                     });
                     reply = {
@@ -126,29 +113,22 @@ class Bot {
             }
         } else {
             // 若不是傳訊事件，就回傳
-            await turnContext.sendActivity(`[${ turnContext.activity.type } event detected]`);
+            await turnContext.sendActivity(`[${turnContext.activity.type} event detected]`);
         }
         // 儲存state
         await this.botState.saveChanges(turnContext);
     }
     async callhelp(turnContext) {
+        const helpList = ['維護時間', '登入流程']
         // help內的字句
-        const buttons = [{
-                type: ActionTypes.ImBack,
-                title: '維護時間',
-                value: '維護時間'
-            },
-            {
-                type: ActionTypes.ImBack,
-                title: '登入流程',
-                value: '登入流程'
-            }
-        ];
-        const card = CardFactory.heroCard('', undefined, buttons, {
-            text: `
-                    請問您有什麼疑問？
-                    關於
-                    `
+        const btns = helpList.map(help => ({
+            type: ActionTypes.ImBack,
+            title: help,
+            value: help
+        }))
+        const card = CardFactory.heroCard('', undefined, btns, {
+            text: `請問您有什麼疑問？
+            關於`
         });
         const reply = {
             type: ActivityTypes.Message
@@ -157,29 +137,20 @@ class Bot {
         await turnContext.sendActivity(reply);
         await turnContext.sendActivity('或是輸入你的問題');
     }
-
     async setChannel(turnContext, message) {
         const reference = TurnContext.getConversationReference(turnContext.activity);
         const channels = await this.channelList.get(turnContext, {});
         channels[message[2]] = {
             name: message[2],
-            reference: {
-                bot: reference.bot,
-                channelId: reference.channelId,
-                conversation: reference.conversation,
-                serviceUrl: reference.serviceUrl
-            }
+            conversation: reference.conversation,
         }
+        console.log(channels[message[2]].conversation);
         try {
             await this.channelList.set(turnContext, channels);
-            await turnContext.sendActivity('Successful write to log.');
+            await turnContext.sendActivity('Successful to add channel.');
         } catch (err) {
-            await turnContext.sendActivity(`Write failed: ${ err.message }`);
+            await turnContext.sendActivity(`Write failed: ${err.message}`);
         }
-    }
-    async checkState(turnContext) {
-        const channels = await this.channelList.get(turnContext, {});
-        await turnContext.sendActivity(`${ JSON.stringify(channels) }`);
     }
     async checkChannel(turnContext) {
         const channels = await this.channelList.get(turnContext, {});
@@ -188,7 +159,7 @@ class Bot {
                 '| Channel Name &nbsp; | Conversation ID &nbsp; |<br>' +
                 '| :--- | :---: |<br>' +
                 Object.keys(channels).map((key) => {
-                    return `${ key } &nbsp; | ${ channels[key].reference.conversation.id.split('|')[0] }`;
+                    return `${key} &nbsp; | ${channels[key].conversation.id.split('|')[0]}`;
                 }).join('<br>'));
         } else {
             await turnContext.sendActivity('The channels log is empty.');
@@ -197,29 +168,35 @@ class Bot {
 
     async announce(turnContext, message) {
         if (message[2]) {
+            // fetch channel list
             const channels = await this.channelList.get(turnContext, {});
-            let res = await Announce.get(`/${message[2]}`);
-            if (res.status==200){
-                try {
-                    for (let channel in channels) {
-                        let reference = channels[channel].reference;
-                        await this.adapter.continueConversation(reference, async (proactiveTurnContext) => {
-                            await proactiveTurnContext.sendActivity(`
-                            ${ res.data.title } 
-                            ${ res.data.detail }
-                            `);
-                        });
-                    }
-                    await turnContext.sendActivity(`Announce has been send`)
-                } catch (err) {
-                    await turnContext.sendActivity(`err happened.`)
+            const { bot, channelId, conversation, serviceUrl } = TurnContext.getConversationReference(turnContext.activity);
+            let ref = new ConversationReference(null, bot, channelId, conversation, null, serviceUrl)
+            try {
+                // fetch announce
+                for (let channel in channels) {
+                    ref.conversation = channels[channel].conversation;
+                    await this.adapter.continueConversation(ref, async (proactiveTurnContext) => {
+                        if (message[2]==='satisfy'){
+                            var reply = MessageFactory.suggestedActions(['Red', 'Yellow', 'Blue'], 'What is the best color?');
+                            await turnContext.sendActivity(reply);
+                            // const suggest =['非常不滿意','不滿意','普通','滿意','非常滿意']
+                            // let reply = MessageFactory.suggestedActions(suggest, '您對我們的服務感到');
+                            // await proactiveTurnContext.sendActivity(reply);
+                        }else{
+                            let res = await Announce.get(`/${message[2]}`);
+                            let reply = `${ res.data.title} 
+                            ${ res.data.detail }`
+                            await proactiveTurnContext.sendActivity(reply);
+                        }
+                    });
                 }
-            } else {
-                await turnContext.sendActivity(`請確認輸入的是有效的 announce id。`)
+                await turnContext.sendActivity(`Announce has been send`)
+            } catch (err) {
+                await turnContext.sendActivity(`err: ${err}`)
             }
-
         } else {
-            await turnContext.sendActivity(`請輸入欲廣播的項目id`)
+            await turnContext.sendActivity(`請輸入欲廣播的項目`)
         }
     }
 }
